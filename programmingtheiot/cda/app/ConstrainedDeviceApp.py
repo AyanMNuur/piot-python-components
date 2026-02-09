@@ -69,10 +69,12 @@ class ConstrainedDeviceApp():
 		
 def main():
 	"""
+	
 	Main function definition for running client as application.
 	
 	Current implementation runs for 65 seconds then exits.
 	"""
+
 	argParser = argparse.ArgumentParser( \
 		description = 'CDA used for generating telemetry - Programming the IoT.')
 	

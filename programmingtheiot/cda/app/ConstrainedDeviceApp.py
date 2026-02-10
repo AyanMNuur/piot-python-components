@@ -20,6 +20,8 @@ import programmingtheiot.common.ConfigConst as ConfigConst
 
 from programmingtheiot.common.ConfigUtil import ConfigUtil
 
+from programmingtheiot.cda.system.SystemPerformanceManager import SystemPerformanceManager
+
 logging.basicConfig(format = '%(asctime)s:%(name)s:%(levelname)s:%(message)s', level = logging.DEBUG)
 
 class ConstrainedDeviceApp():
@@ -35,6 +37,8 @@ class ConstrainedDeviceApp():
 		@param path The name of the resource to apply to the URI.
 		"""
 		logging.info("Initializing CDA...")
+
+		self.sysPerfMgr = SystemPerformanceManager()
 		
 		# TODO: implementation here
 		
@@ -53,6 +57,7 @@ class ConstrainedDeviceApp():
 		logging.info("Starting CDA...")
 		
 		# TODO: implementation here
+		self.sysPerfMgr.startManager()
 		
 		logging.info("CDA started.")
 
@@ -64,6 +69,7 @@ class ConstrainedDeviceApp():
 		logging.info("CDA stopping...")
 		
 		# TODO: implementation here
+		self.sysPerfMgr.stopManager()
 		
 		logging.info("CDA stopped with exit code %s.", str(code))
 		

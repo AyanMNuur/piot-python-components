@@ -9,6 +9,7 @@
 # provided within in order to meet the needs of your specific
 # Programming the Internet of Things project.
 # 
+import programmingtheiot.common.ConfigConst as ConfigConst
 
 import logging
 
@@ -23,6 +24,12 @@ class TemperatureSensorSimTask(BaseSensorSimTask):
 	
 	"""
 
-	def __init__(self):
-		pass
+	def __init__(self, dataSet = None):
+		super( \
+			TemperatureSensorSimTask, self).__init__( \
+				name = ConfigConst.TEMP_SENSOR_NAME, \
+				typeID = ConfigConst.TEMP_SENSOR_TYPE, \
+				dataSet = dataSet, \
+				minVal = SensorDataGenerator.LOW_NORMAL_INDOOR_TEMP, \
+				maxVal = SensorDataGenerator.HI_NORMAL_INDOOR_TEMP)
 	

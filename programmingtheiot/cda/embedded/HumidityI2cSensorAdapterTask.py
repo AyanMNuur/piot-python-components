@@ -12,6 +12,7 @@
 
 import logging
 
+from programmingtheiot.cda.sim.SensorDataGenerator import SensorDataGenerator
 from programmingtheiot.data.SensorData import SensorData
 
 class HumidityI2cSensorAdapterTask():
@@ -21,7 +22,19 @@ class HumidityI2cSensorAdapterTask():
 	"""
 
 	def __init__(self):
-		pass
+		super(HumidityI2cSensorAdapterTask, self).__init__(typeID = 
+		SensorData.HUMIDITY_SENSOR_TYPE, minVal = SensorDataGenerator.LOW_NORMAL_ENV_HUMIDITY, 
+		maxVal = SensorDataGenerator.HI_NORMAL_ENV_HUMIDITY)
+
+		self.sensorType = SensorData.HUMIDITY_SENSOR_TYPE
+
+		# Example only: Read the spec for the SenseHAT humidity sensor to obtain the appropriate starting address and use i2c-tools to verify.
+		self.humidAddr = 0x5F
+
+		# init the I2C bus at the humidity address
+		# WARNING: only use I2C bus 1 when working with the SenseHAT on the Raspberry Pi!!
+		self.i2cBus = smbus.SMBus(1)
+		self.i2cBus.write_byte_data(self.humidAddr, 0, 0)
 	
 	def generateTelemetry(self) -> SensorData:
 		pass

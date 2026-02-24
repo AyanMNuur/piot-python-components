@@ -17,6 +17,8 @@ HANDLE_TEMP_CHANGE_ON_DEVICE_KEY = 'handleTempChangeOnDevice'
 TRIGGER_HVAC_TEMP_FLOOR_KEY = 'triggerHvacTempFloor'
 TRIGGER_HVAC_TEMP_CEILING_KEY = 'triggerHvacTempCeiling'
 
+from programmingtheiot.cda.connection.RedisPersistenceAdapter import RedisPersistenceAdapter
+
 import logging
 
 from programmingtheiot.cda.connection.CoapClientConnector import CoapClientConnector
@@ -92,6 +94,13 @@ class DeviceDataManager(IDataMessageListener):
 			self.configUtil.getFloat( \
 				ConfigConst.CONSTRAINED_DEVICE, ConfigConst.TRIGGER_HVAC_TEMP_CEILING_KEY);
 		
+		# Module 5 - persistence with Redis
+		self.redisClient = RedisPersistenceAdapter()
+
+		# Simple on/off flag - If you want it OFF by default:
+		self.enableRedisStorage = True
+		# self.enableRedisStorage = False
+
 	def getLatestActuatorDataResponseFromCache(self, name: str = None) -> ActuatorData:
 		"""
 		Retrieves the named actuator data (response) item from the internal data cache.
@@ -184,14 +193,37 @@ class DeviceDataManager(IDataMessageListener):
 		@param data The incoming SensorData message.
 		@return boolean
 		"""
+		# if data:
+		# 	logging.debug("Incoming sensor data received (from sensor manager): " + str(data))
+		# 	self._handleSensorDataAnalysis(data = data)
+		# 	return True
+		# else:
+		# 	logging.warning("Incoming sensor data is invalid (null). Ignoring.")
+		# 	return False
+		
+		"""
+		This callback method will be invoked by the sensor manager that just processed
+		a new sensor reading.
+		"""
+		# Module 5 - persistence with Redis
 		if data:
 			logging.debug("Incoming sensor data received (from sensor manager): " + str(data))
+
+			# Store to Redis
+			if self.enableRedisStorage:
+				self.redisClient.storeData(
+					ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE,
+					data
+				)
+
+			# Continue normal processing
 			self._handleSensorDataAnalysis(data = data)
+
 			return True
 		else:
 			logging.warning("Incoming sensor data is invalid (null). Ignoring.")
 			return False
-		
+			
 	def handleSystemPerformanceMessage(self, data: SystemPerformanceData) -> bool:
 		"""
 		This callback method will be invoked by the system performance manager that just
@@ -216,26 +248,33 @@ class DeviceDataManager(IDataMessageListener):
 			
 	def startManager(self):
 		logging.info("Starting DeviceDataManager...")
-	
+
 		if self.sysPerfMgr:
 			self.sysPerfMgr.startManager()
-		
+
 		if self.sensorAdapterMgr:
 			self.sensorAdapterMgr.startManager()
-			
+
+		# Module 5 - persistence with Redis
+		if self.enableRedisStorage:
+			self.redisClient.connectClient()
+
 		logging.info("Started DeviceDataManager.")
 		
 	def stopManager(self):
 		logging.info("Stopping DeviceDataManager...")
-	
+
 		if self.sysPerfMgr:
 			self.sysPerfMgr.stopManager()
-		
-		if self.sensorAdapterMgr:	
+
+		if self.sensorAdapterMgr:
 			self.sensorAdapterMgr.stopManager()
-			
-		logging.info("Stopped DeviceDataManager.")
-		
+
+		# Module 5 - persistence with Redis
+		if self.enableRedisStorage:
+			self.redisClient.disconnectClient()
+
+	logging.info("Stopped DeviceDataManager.")
 	def _handleIncomingDataAnalysis(self, msg: str):
 		"""
 		Call this from handleIncomeMessage() to determine if there's

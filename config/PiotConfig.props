@@ -77,3 +77,12 @@ streamFps           =   30
 imageFileExt        = .png
 videoFileExt        = .avi
 minMotionPixelsDiff = 10000
+
+#
+# Redis configuration
+#
+[Redis]
+host = localhost
+port = 6379
+password = 
+db = 0

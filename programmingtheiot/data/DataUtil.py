@@ -40,10 +40,20 @@ class DataUtil():
 		return jsonData
 	
 	def sensorDataToJson(self, data: SensorData = None):
-		pass
+		if not data:
+			logging.debug("SensorData is null. Returning empty string.")
+			return ""
+		
+		jsonData = self._generateJsonData(obj = data)
+		return jsonData
 
 	def systemPerformanceDataToJson(self, data: SystemPerformanceData = None):
-		pass
+		if not data:
+			logging.debug("SystemPerformanceData is null. Returning empty string.")
+			return ""
+		
+		jsonData = self._generateJsonData(obj = data)
+		return jsonData
 	
 	def jsonToActuatorData(self, jsonData: str = None, useDecForFloat: bool = False):
 		if not jsonData:
@@ -56,10 +66,24 @@ class DataUtil():
 		return ad
 	
 	def jsonToSensorData(self, jsonData: str = None):
-		pass
+		if not jsonData:
+			logging.warning("JSON data is empty or null. Returning null.")
+			return None
+		
+		jsonStruct = self._formatDataAndLoadDictionary(jsonData)
+		sd = SensorData()
+		self._updateIotData(jsonStruct, sd)
+		return sd
 	
 	def jsonToSystemPerformanceData(self, jsonData: str = None):
-		pass
+		if not jsonData:
+			logging.warning("JSON data is empty or null. Returning null.")
+			return None
+		
+		jsonStruct = self._formatDataAndLoadDictionary(jsonData)
+		spd = SystemPerformanceData()
+		self._updateIotData(jsonStruct, spd)
+		return spd
 
 	def _formatDataAndLoadDictionary(self, jsonData: str, useDecForFloat: bool = False) -> dict:
 		jsonData = jsonData.replace("\'", "\"").replace('False', 'false').replace('True', 'true')

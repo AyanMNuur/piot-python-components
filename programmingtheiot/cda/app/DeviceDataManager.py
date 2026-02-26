@@ -17,7 +17,6 @@ HANDLE_TEMP_CHANGE_ON_DEVICE_KEY = 'handleTempChangeOnDevice'
 TRIGGER_HVAC_TEMP_FLOOR_KEY = 'triggerHvacTempFloor'
 TRIGGER_HVAC_TEMP_CEILING_KEY = 'triggerHvacTempCeiling'
 
-from programmingtheiot.cda.connection.RedisPersistenceAdapter import RedisPersistenceAdapter
 
 import logging
 
@@ -59,6 +58,10 @@ class DeviceDataManager(IDataMessageListener):
 		# NOTE: this can also be retrieved from the configuration file
 		self.enableActuation    = True
 		
+		self.enableMqttClient   = \
+			self.configUtil.getBoolean( \
+				section = ConfigConst.CONSTRAINED_DEVICE, key = ConfigConst.ENABLE_MQTT_CLIENT_KEY)
+		
 		self.sysPerfMgr         = None
 		self.sensorAdapterMgr   = None
 		self.actuatorAdapterMgr = None
@@ -82,6 +85,11 @@ class DeviceDataManager(IDataMessageListener):
 			self.actuatorAdapterMgr = ActuatorAdapterManager(dataMsgListener = self)
 			logging.info("Local actuation capabilities enabled")
 		
+		if self.enableMqttClient:
+			self.mqttClient = MqttClientConnector()
+			self.mqttClient.setDataMessageListener(self)
+			logging.info("MQTT client connector enabled")
+		
 		self.handleTempChangeOnDevice = \
 			self.configUtil.getBoolean( \
 				ConfigConst.CONSTRAINED_DEVICE, ConfigConst.HANDLE_TEMP_CHANGE_ON_DEVICE_KEY)
@@ -94,12 +102,7 @@ class DeviceDataManager(IDataMessageListener):
 			self.configUtil.getFloat( \
 				ConfigConst.CONSTRAINED_DEVICE, ConfigConst.TRIGGER_HVAC_TEMP_CEILING_KEY);
 		
-		# Module 5 - persistence with Redis
-		self.redisClient = RedisPersistenceAdapter()
-
-		# Simple on/off flag - If you want it OFF by default:
-		self.enableRedisStorage = True
-		# self.enableRedisStorage = False
+		
 
 	def getLatestActuatorDataResponseFromCache(self, name: str = None) -> ActuatorData:
 		"""
@@ -209,15 +212,10 @@ class DeviceDataManager(IDataMessageListener):
 		if data:
 			logging.debug("Incoming sensor data received (from sensor manager): " + str(data))
 
-			# Store to Redis
-			if self.enableRedisStorage:
-				self.redisClient.storeData(
-					ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE,
-					data
-				)
+		
 
 			# Continue normal processing
-			self._handleSensorDataAnalysis(data = data)
+			#self._handleSensorDataAnalysis(data = data)
 
 			return True
 		else:
@@ -255,9 +253,11 @@ class DeviceDataManager(IDataMessageListener):
 		if self.sensorAdapterMgr:
 			self.sensorAdapterMgr.startManager()
 
-		# Module 5 - persistence with Redis
-		if self.enableRedisStorage:
-			self.redisClient.connectClient()
+		
+
+		if self.mqttClient:
+			self.mqttClient.connectClient()
+			self.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, callback = None, qos = ConfigConst.DEFAULT_QOS)
 
 		logging.info("Started DeviceDataManager.")
 		
@@ -270,11 +270,12 @@ class DeviceDataManager(IDataMessageListener):
 		if self.sensorAdapterMgr:
 			self.sensorAdapterMgr.stopManager()
 
-		# Module 5 - persistence with Redis
-		if self.enableRedisStorage:
-			self.redisClient.disconnectClient()
+		
+		if self.mqttClient:
+			self.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE)
+			self.mqttClient.disconnectClient()
 
-	logging.info("Stopped DeviceDataManager.")
+		logging.info("Stopped DeviceDataManager.")
 	def _handleIncomingDataAnalysis(self, msg: str):
 		"""
 		Call this from handleIncomeMessage() to determine if there's

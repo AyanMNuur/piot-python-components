@@ -63,15 +63,17 @@ class SystemPerformanceManager(object):
 			
 		sysPerfData = SystemPerformanceData()
 		sysPerfData.setLocationID(self.locationID)
-		sysPerfData.setCpuUtilization(self.cpuUtilPct)
-		sysPerfData.setMemoryUtilization(self.memUtilPct)
-		
+		sysPerfData.setCpuUtilization(cpuUtilPct)
+		sysPerfData.setMemoryUtilization(memUtilPct)
+		logging.info("now listener is " + str(self.dataMsgListener))
+
 		if self.dataMsgListener:
 			self.dataMsgListener.handleSystemPerformanceMessage(data = sysPerfData)
 	
 	def setDataMessageListener(self, listener: IDataMessageListener) -> bool:
 		if listener:
 			self.dataMsgListener = listener
+		logging.info("listener is " + str(self.dataMsgListener))
 	
 	def startManager(self):
 		logging.info("Started SystemPerformanceManager.")
